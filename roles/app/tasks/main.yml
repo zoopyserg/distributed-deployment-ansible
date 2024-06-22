@@ -1,0 +1,79 @@
+- name: Install dependencies for Docker
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - ca-certificates
+    - curl
+    - gnupg
+  become: yes
+
+- name: Add Docker's official GPG key
+  shell: |
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  become: yes
+
+- name: Add Docker's stable repository
+  shell: |
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  become: yes
+
+- name: Update apt and install Docker
+  apt:
+    update_cache: yes
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+  become: yes
+
+- name: Stop and disable RabbitMQ service
+  service:
+    name: rabbitmq-server
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+  become: yes
+
+- name: Remove RabbitMQ package
+  apt:
+    name: rabbitmq-server
+    state: absent
+  ignore_errors: yes
+  become: yes
+
+- name: Kill any running RabbitMQ process
+  shell: |
+    pkill -f rabbitmq || true
+  ignore_errors: yes
+  become: yes
+
+- name: Stop and remove all Docker containers
+  shell: |
+    docker ps -q | xargs -r docker stop
+    docker ps -aq | xargs -r docker rm
+  ignore_errors: yes
+  become: yes
+
+- name: Clone application repository
+  git:
+    repo: 'git@github.com:zoopyserg/rabbitmq-code-sample.git'
+    dest: /home/{{ remote_user }}/app
+    version: main
+    force: yes
+  become: yes
+  become_user: "{{ remote_user }}"
+
+- name: Start Docker Compose
+  command: docker compose up -d
+  args:
+    chdir: /home/{{ remote_user }}/app
+  become: yes
+  become_user: "{{ remote_user }}"

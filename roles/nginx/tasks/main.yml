@@ -1,0 +1,59 @@
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Ensure default configuration directories are present
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+    - /etc/nginx/conf.d
+  become: yes
+
+- name: Stop and disable Apache
+  service:
+    name: apache2
+    state: stopped
+    enabled: no
+  become: yes
+  ignore_errors: yes
+
+- name: Copy Nginx main configuration
+  copy:
+    src: "{{ nginx_main_config_src }}"
+    dest: "{{ nginx_main_config_dest }}"
+    force: yes
+  become: yes
+
+- name: Copy Nginx site configuration
+  copy:
+    src: "{{ nginx_site_config_src }}"
+    dest: "{{ nginx_site_config_dest }}"
+    force: yes
+  become: yes
+
+- name: Enable site configuration
+  file:
+    src: "{{ nginx_site_config_dest }}"
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+  become: yes
+
+- name: Test Nginx configuration
+  command: nginx -t
+  register: nginx_test
+  failed_when: nginx_test.rc != 0
+  notify: Restart Nginx
+  become: yes
+
+- name: Ensure Nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  become: yes

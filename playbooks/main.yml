@@ -1,0 +1,37 @@
+- name: Deploy Rails Microservice
+  hosts: all
+  gather_facts: no
+  become: yes
+  become_user: root
+  vars_files:
+    - ../vars.yml
+  pre_tasks:
+    - name: Set become password
+      set_fact:
+        ansible_become_pass: "{{ sudo_password }}"
+
+    - name: Print remote user
+      debug:
+        msg: "Remote User: {{ remote_user }}"
+
+    - name: Print sudo password
+      debug:
+        msg: "Sudo Password: {{ sudo_password }}"
+
+    - name: Print become password
+      debug:
+        msg: "Become Password: {{ ansible_become_pass }}"
+
+    - name: Ensure sudo works
+      command: whoami
+      register: whoami_result
+      become: yes
+
+    - name: Display whoami result
+      debug:
+        var: whoami_result
+
+  roles:
+    - rabbitmq
+    - nginx
+    - app

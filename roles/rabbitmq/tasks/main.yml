@@ -1,0 +1,15 @@
+- name: Install RabbitMQ
+  apt:
+    name: rabbitmq-server
+    state: present
+    update_cache: yes
+
+- name: Ensure RabbitMQ is running
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: yes
+
+- name: Configure RabbitMQ user
+  command: rabbitmqctl add_user {{ rabbitmq_user }} {{ rabbitmq_pass }}
+  when: rabbitmq_user is defined and rabbitmq_pass is defined

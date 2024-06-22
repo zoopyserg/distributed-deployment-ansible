@@ -1,0 +1,6 @@
+remote_user: your_remote_user
+sudo_password: your_sudo_password
+nginx_config_src: files/nginx/nginx.conf
+nginx_config_dest: /etc/nginx/nginx.conf
+nginx_site_config_src: files/default
+nginx_site_config_dest: /etc/nginx/sites-available/default
